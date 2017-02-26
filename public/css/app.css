@@ -1,0 +1,86 @@
+.users-form {
+  width: 600px;
+  height: 400px;
+  margin-right: auto;
+  margin-left: auto;
+}
+.list {
+  display: inline-block;
+  vertical-align: middle;
+  width: 38%;
+  height: 100%;
+  overflow: auto;
+}
+.list__title {
+  font-weight: bold;
+  margin-left: 20px;
+}
+.list__items {
+  margin: 0;
+  list-style: none;
+  padding-left: 20px;
+}
+.list__item {
+  padding: 3px;
+  max-width: 208px;
+  overflow: hidden;
+}
+.list__item--active {
+  background-color: #eee;
+}
+.list__item-destroy {
+  display: block;
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  padding-top: 0;
+  padding-right: 5px;
+  padding-left: 5px;
+  text-align: center;
+}
+.list__link {
+  color: #333;
+  text-decoration: none;
+}
+.list__link span {
+  text-transform: capitalize;
+}
+.dashboard {
+  display: inline-block;
+  vertical-align: middle;
+  width: 50%;
+  height: 100%;
+  overflow: auto;
+}
+.dashboard__title {
+  font-weight: bold;
+  margin-left: 20px;
+}
+.dashboard__add {
+  margin-top: 10px;
+}
+.dashboard__items {
+  margin: 0;
+  margin-top: 10px;
+  list-style: none;
+  padding-left: 20px;
+}
+.dashboard__item {
+  margin-top: 3px;
+  margin-bottom: 10px;
+}
+.dashboard__label {
+  display: block;
+  width: 100px;
+}
+.dashboard__input {
+  text-transform: capitalize;
+}
+.dashboard__wrapper {
+  padding-left: 20px;
+}
+.dashboard__cancel {
+  margin-right: 15px;
+}
+
+/*# sourceMappingURL=app.css.map*/

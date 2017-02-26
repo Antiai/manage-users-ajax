@@ -1,0 +1,8 @@
+fieldset.list
+  legend.list__title= title
+  ul.list__items
+    each item in items
+      li.list__item
+        a(href).list__link
+            span(class='list__firstname')=item.firstname + " "
+            span(class='list__surname')=item.surname

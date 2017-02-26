@@ -1,0 +1,41 @@
+
+.list
+  display inline-block
+  vertical-align middle
+  width 38%
+  height 100%
+  overflow auto
+
+  &__title
+    font-weight bold
+    margin-left 20px
+
+  &__items
+    margin 0
+    list-style none
+    padding-left 20px
+
+  &__item
+    padding 3px
+    max-width 208px
+    overflow hidden
+
+    &--active
+      background-color #eee
+
+  &__item-destroy
+    display block
+    position absolute
+    width 20px
+    height 20px
+    padding-top 0
+    padding-right 5px
+    padding-left 5px
+    text-align center
+
+  &__link
+    color #333
+    text-decoration none
+
+    span
+      text-transform capitalize
