@@ -23,7 +23,8 @@ export default class List {
     this._removeItem = this._removeItem.bind(this);
     this.setProps = this.setProps.bind(this);
     this.addNewItem = this.addNewItem.bind(this);
-    this._updateList = this._updateItem.bind(this);
+    this._updateItem = this._updateItem.bind(this);
+    this.updateList = this.updateList.bind(this);
   }
 
   _render() {
@@ -38,6 +39,15 @@ export default class List {
   addNewItem(obj) {
     this._items.push(obj);
     this._elem.querySelector('.list__items').insertAdjacentHTML('beforeend', itemTemplate({item: obj}));
+
+    if (obj._id) return;
+
+    this._elem.dispatchEvent(new CustomEvent('item-added', {
+      bubbles: true,
+      detail: {
+        value: obj
+      }
+    }));
   }
 
   _removeItem(e) {
@@ -48,6 +58,18 @@ export default class List {
 
     let arr = Array.from(this._elem.querySelectorAll('.list__item'));
     let index = arr.indexOf(e.target.closest('.list__item'));
+
+    let removedItemID = this._items[index]._id;
+
+    if (removedItemID) {
+      this._elem.dispatchEvent(new CustomEvent('item-removed', {
+        bubbles: true,
+        detail: {
+          value: removedItemID
+        }
+      }));
+    }
+
     this._items.splice(index, 1);
 
     e.target.closest('.list__item').remove();
@@ -114,6 +136,7 @@ export default class List {
   }
 
   setProps(obj) {
+
     if (Object.keys(this.selected).length == 0) {
       this.addNewItem(obj);
       return;
@@ -123,15 +146,35 @@ export default class List {
 
     let activeElm = this._elem.querySelector(".list__item--active");
 
-    activeElm.querySelector('.list__firstname').innerHTML = obj.firstname + " ";
-    activeElm.querySelector('.list__surname').innerHTML = obj.surname;
+    activeElm.querySelector('.list__fullname').innerHTML = obj.fullName;
   }
 
   _updateItem(obj) {
     let selectedIndex = this._items.indexOf(this.selected);
 
-    this._items[selectedIndex] = {firstname: obj.firstname, surname: obj.surname};
+    this._items[selectedIndex].fullName = obj.fullName;
+    this._items[selectedIndex].email = obj.email;
+
     this.selected = this._items[selectedIndex];
+
+    this._elem.dispatchEvent(new CustomEvent('item-updated', {
+      bubbles: true,
+      detail: {
+        value: this.selected
+      }
+    }));
+  }
+
+  updateList(arr) {
+    let container = this._elem.querySelector('.list__items');
+    let collection = container.getElementsByTagName('li');
+    if (collection.length > 0) {
+      container.innerHTML = '';
+    }
+
+    for (let item of arr) {
+      this.addNewItem(item);
+    }
   }
 
   getElem() {

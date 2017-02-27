@@ -38,7 +38,9 @@ export default class Dashboard {
     let valuesArr = [];
 
     for (let key in selectedObj) {
-      valuesArr.push(selectedObj[key]);
+      if (key !== "_id") {
+        valuesArr.push(selectedObj[key]);
+      }
     }
 
     let index = 0;
@@ -58,8 +60,8 @@ export default class Dashboard {
     this._elem.dispatchEvent(new CustomEvent('item-save', {
       bubbles: true,
       detail: {
-        firstname: this.fields[0].value,
-        surname: this.fields[1].value
+        fullName: this.fields[0].value,
+        email: this.fields[1].value
       }
     }));
   }
@@ -72,8 +74,8 @@ export default class Dashboard {
     this._elem.dispatchEvent(new CustomEvent('item-new', {
       bubbles: true,
       detail: {
-        firstname: this.fields[0].value,
-        surname: this.fields[1].value
+        fullName: this.fields[0].value,
+        email: this.fields[1].value
       }
     }));
   }

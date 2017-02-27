@@ -4,11 +4,11 @@ fieldset.dashboard
     button(type='button' class='dashboard__add' title='Заполните поля и нажмите кнопку для добавления') Новый пользователь
   ul.dashboard__items
     li.dashboard__item
-      label(for='firstname' class='dashboard__label') Имя
-      input(id='firstname' class='dashboard__input')
+      label(for='fullName' class='dashboard__label') Имя пользователя
+      input(id='fullName' class='dashboard__input')
     li.dashboard__item
-      label(for='surname' class='dashboard__label') Фамилия
-      input(id='surname' class='dashboard__input')
+      label(for='email' class='dashboard__label') Email
+      input(type='email' id='email' class='dashboard__input')
   .dashboard__wrapper
     button(type='button' class='dashboard__cancel') Отмена
     button(type='submit' class='dashboard__submit') Сохранить
