@@ -1877,8 +1877,7 @@ module.exports = {
     };
   }
 
-/* jshint undef: false, newcap: false */
-/* eslint no-undef: 0, new-cap: 0 */
+/* eslint no-undef: "off", new-cap: "off" */
 , createHtmlfile: function(iframeUrl, errorCallback) {
     var axo = ['Active'].concat('Object').join('X');
     var doc = new global[axo]('htmlfile');
@@ -2694,7 +2693,7 @@ function URL(address, location, parser) {
           address = address.slice(0, index);
         }
       }
-    } else if (index = parse.exec(address)) {
+    } else if ((index = parse.exec(address))) {
       url[key] = index[1];
       address = address.slice(0, index.index);
     }
@@ -2772,7 +2771,7 @@ function URL(address, location, parser) {
  * @returns {URL}
  * @api public
  */
-URL.prototype.set = function set(part, value, fn) {
+function set(part, value, fn) {
   var url = this;
 
   switch (part) {
@@ -2853,7 +2852,7 @@ URL.prototype.set = function set(part, value, fn) {
  * @returns {String}
  * @api public
  */
-URL.prototype.toString = function toString(stringify) {
+function toString(stringify) {
   if (!stringify || 'function' !== typeof stringify) stringify = qs.stringify;
 
   var query
@@ -2878,7 +2877,9 @@ URL.prototype.toString = function toString(stringify) {
   if (url.hash) result += url.hash;
 
   return result;
-};
+}
+
+URL.prototype = { set: set, toString: toString };
 
 //
 // Expose the URL parser and some additional properties that might be useful for
@@ -3735,13 +3736,13 @@ function SenderReceiver(transUrl, urlSuffix, senderFunc, Receiver, AjaxObject) {
 inherits(SenderReceiver, BufferedSender);
 
 SenderReceiver.prototype.close = function() {
+  BufferedSender.prototype.close.call(this);
   debug('close');
   this.removeAllListeners();
   if (this.poll) {
     this.poll.abort();
     this.poll = null;
   }
-  this.stop();
 };
 
 module.exports = SenderReceiver;
@@ -3831,7 +3832,7 @@ module.exports = XhrPollingTransport;
 /* 34 */
 /***/ (function(module, exports) {
 
-module.exports = '1.1.1';
+module.exports = '1.1.2';
 
 
 /***/ }),
@@ -3872,36 +3873,51 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__form_form_styl___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__form_form_styl__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__list__ = __webpack_require__(39);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__dashboard__ = __webpack_require__(38);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__users__ = __webpack_require__(96);
 
 
 
 
 
+
+
+let users = new __WEBPACK_IMPORTED_MODULE_3__users__["a" /* default */]();
 
 let form = document.forms[0];
 
+
 let userList = new __WEBPACK_IMPORTED_MODULE_1__list__["a" /* default */] ({
   title: "Пользователи",
-  items: [{
-    firstname: "Василий",
-    surname:  "Иванов"
-  }, {
-    firstname: "Петр",
-    surname:  "Васильев"
-  }, {
-    firstname: "Иван",
-    surname:  "Сидоров"
-  }]
+  items: []
 });
 
 form.appendChild(userList.getElem());
 
 let userDashboard = new __WEBPACK_IMPORTED_MODULE_2__dashboard__["a" /* default */] ({
   title: "Редактирование профиля",
-  list: userList
 });
 
 form.appendChild(userDashboard.getElem());
+
+document.addEventListener('users-recieved', function(event) {
+  userList.updateList(event.detail.value);
+});
+
+form.addEventListener('item-updated', function(event) {
+  users.updateItem(event.detail.value);
+});
+
+form.addEventListener('item-added', function(event) {
+  users.addNewItem(event.detail.value);
+});
+
+document.addEventListener('users-data-updated', function(event) {
+  users.getUsers();
+});
+
+form.addEventListener('item-removed', function(event) {
+  users.removeItem(event.detail.value);
+});
 
 form.addEventListener('item-select', function(event) {
   userDashboard.showProps(event.detail.value);
@@ -3969,7 +3985,8 @@ var hot = false;
 var initial = true;
 var currentHash = "";
 var logLevel = "info";
-var useOverlay = false;
+var useWarningOverlay = false;
+var useErrorOverlay = false;
 
 function log(level, msg) {
 	if(logLevel === "info" && level === "info")
@@ -4004,6 +4021,7 @@ var onSocketMsg = {
 	},
 	"still-ok": function() {
 		log("info", "[WDS] Nothing changed.")
+		if(useWarningOverlay || useErrorOverlay) overlay.clear();
 		sendMsg("StillOk");
 	},
 	"log-level": function(level) {
@@ -4011,12 +4029,18 @@ var onSocketMsg = {
 	},
 	"overlay": function(overlay) {
 		if(typeof document !== "undefined") {
-			useOverlay = overlay;
+			if(typeof(overlay) === "boolean") {
+				useWarningOverlay = overlay;
+				useErrorOverlay = overlay;
+			} else if(overlay) {
+				useWarningOverlay = overlay.warnings;
+				useErrorOverlay = overlay.errors;
+			}
 		}
 	},
 	ok: function() {
 		sendMsg("Ok");
-		if(useOverlay) overlay.clear();
+		if(useWarningOverlay || useErrorOverlay) overlay.clear();
 		if(initial) return initial = false;
 		reloadApp();
 	},
@@ -4032,6 +4056,8 @@ var onSocketMsg = {
 		sendMsg("Warnings", strippedWarnings);
 		for(var i = 0; i < strippedWarnings.length; i++)
 			console.warn(strippedWarnings[i]);
+		if(useWarningOverlay) overlay.showMessage(warnings);
+
 		if(initial) return initial = false;
 		reloadApp();
 	},
@@ -4043,7 +4069,7 @@ var onSocketMsg = {
 		sendMsg("Errors", strippedErrors);
 		for(var i = 0; i < strippedErrors.length; i++)
 			console.error(strippedErrors[i]);
-		if(useOverlay) overlay.showErrors(errors);
+		if(useErrorOverlay) overlay.showMessage(errors);
 	},
 	close: function() {
 		log("error", "[WDS] Disconnected!");
@@ -4149,7 +4175,9 @@ class Dashboard {
     let valuesArr = [];
 
     for (let key in selectedObj) {
-      valuesArr.push(selectedObj[key]);
+      if (key !== "_id") {
+        valuesArr.push(selectedObj[key]);
+      }
     }
 
     let index = 0;
@@ -4169,8 +4197,8 @@ class Dashboard {
     this._elem.dispatchEvent(new CustomEvent('item-save', {
       bubbles: true,
       detail: {
-        firstname: this.fields[0].value,
-        surname: this.fields[1].value
+        fullName: this.fields[0].value,
+        email: this.fields[1].value
       }
     }));
   }
@@ -4183,8 +4211,8 @@ class Dashboard {
     this._elem.dispatchEvent(new CustomEvent('item-new', {
       bubbles: true,
       detail: {
-        firstname: this.fields[0].value,
-        surname: this.fields[1].value
+        fullName: this.fields[0].value,
+        email: this.fields[1].value
       }
     }));
   }
@@ -4249,7 +4277,8 @@ class List {
     this._removeItem = this._removeItem.bind(this);
     this.setProps = this.setProps.bind(this);
     this.addNewItem = this.addNewItem.bind(this);
-    this._updateList = this._updateItem.bind(this);
+    this._updateItem = this._updateItem.bind(this);
+    this.updateList = this.updateList.bind(this);
   }
 
   _render() {
@@ -4264,6 +4293,15 @@ class List {
   addNewItem(obj) {
     this._items.push(obj);
     this._elem.querySelector('.list__items').insertAdjacentHTML('beforeend', __WEBPACK_IMPORTED_MODULE_1__item_pug___default()({item: obj}));
+
+    if (obj._id) return;
+
+    this._elem.dispatchEvent(new CustomEvent('item-added', {
+      bubbles: true,
+      detail: {
+        value: obj
+      }
+    }));
   }
 
   _removeItem(e) {
@@ -4274,6 +4312,18 @@ class List {
 
     let arr = Array.from(this._elem.querySelectorAll('.list__item'));
     let index = arr.indexOf(e.target.closest('.list__item'));
+
+    let removedItemID = this._items[index]._id;
+
+    if (removedItemID) {
+      this._elem.dispatchEvent(new CustomEvent('item-removed', {
+        bubbles: true,
+        detail: {
+          value: removedItemID
+        }
+      }));
+    }
+
     this._items.splice(index, 1);
 
     e.target.closest('.list__item').remove();
@@ -4340,6 +4390,7 @@ class List {
   }
 
   setProps(obj) {
+
     if (Object.keys(this.selected).length == 0) {
       this.addNewItem(obj);
       return;
@@ -4349,15 +4400,35 @@ class List {
 
     let activeElm = this._elem.querySelector(".list__item--active");
 
-    activeElm.querySelector('.list__firstname').innerHTML = obj.firstname + " ";
-    activeElm.querySelector('.list__surname').innerHTML = obj.surname;
+    activeElm.querySelector('.list__fullname').innerHTML = obj.fullName;
   }
 
   _updateItem(obj) {
     let selectedIndex = this._items.indexOf(this.selected);
 
-    this._items[selectedIndex] = {firstname: obj.firstname, surname: obj.surname};
+    this._items[selectedIndex].fullName = obj.fullName;
+    this._items[selectedIndex].email = obj.email;
+
     this.selected = this._items[selectedIndex];
+
+    this._elem.dispatchEvent(new CustomEvent('item-updated', {
+      bubbles: true,
+      detail: {
+        value: this.selected
+      }
+    }));
+  }
+
+  updateList(arr) {
+    let container = this._elem.querySelector('.list__items');
+    let collection = container.getElementsByTagName('li');
+    if (collection.length > 0) {
+      container.innerHTML = '';
+    }
+
+    for (let item of arr) {
+      this.addNewItem(item);
+    }
   }
 
   getElem() {
@@ -5587,7 +5658,7 @@ function plural(ms, n, name) {
 
 var pug = __webpack_require__(15);
 
-function template(locals) {var pug_html = "", pug_mixins = {}, pug_interp;;var locals_for_with = (locals || {});(function (title) {pug_html = pug_html + "\u003Cfieldset class=\"dashboard\"\u003E\u003Clegend class=\"dashboard__title\"\u003E" + (pug.escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Flegend\u003E\u003Cdiv class=\"dashboard__wrapper\"\u003E\u003Cbutton class=\"dashboard__add\" type=\"button\" title=\"Заполните поля и нажмите кнопку для добавления\"\u003EНовый пользователь\u003C\u002Fbutton\u003E\u003C\u002Fdiv\u003E\u003Cul class=\"dashboard__items\"\u003E\u003Cli class=\"dashboard__item\"\u003E\u003Clabel class=\"dashboard__label\" for=\"firstname\"\u003EИмя\u003C\u002Flabel\u003E\u003Cinput class=\"dashboard__input\" id=\"firstname\"\u003E\u003C\u002Fli\u003E\u003Cli class=\"dashboard__item\"\u003E\u003Clabel class=\"dashboard__label\" for=\"surname\"\u003EФамилия\u003C\u002Flabel\u003E\u003Cinput class=\"dashboard__input\" id=\"surname\"\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cdiv class=\"dashboard__wrapper\"\u003E\u003Cbutton class=\"dashboard__cancel\" type=\"button\"\u003EОтмена\u003C\u002Fbutton\u003E\u003Cbutton class=\"dashboard__submit\" type=\"submit\"\u003EСохранить\u003C\u002Fbutton\u003E\u003C\u002Fdiv\u003E\u003C\u002Ffieldset\u003E";}.call(this,"title" in locals_for_with?locals_for_with.title:typeof title!=="undefined"?title:undefined));;return pug_html;};
+function template(locals) {var pug_html = "", pug_mixins = {}, pug_interp;;var locals_for_with = (locals || {});(function (title) {pug_html = pug_html + "\u003Cfieldset class=\"dashboard\"\u003E\u003Clegend class=\"dashboard__title\"\u003E" + (pug.escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Flegend\u003E\u003Cdiv class=\"dashboard__wrapper\"\u003E\u003Cbutton class=\"dashboard__add\" type=\"button\" title=\"Заполните поля и нажмите кнопку для добавления\"\u003EНовый пользователь\u003C\u002Fbutton\u003E\u003C\u002Fdiv\u003E\u003Cul class=\"dashboard__items\"\u003E\u003Cli class=\"dashboard__item\"\u003E\u003Clabel class=\"dashboard__label\" for=\"fullName\"\u003EИмя пользователя\u003C\u002Flabel\u003E\u003Cinput class=\"dashboard__input\" id=\"fullName\"\u003E\u003C\u002Fli\u003E\u003Cli class=\"dashboard__item\"\u003E\u003Clabel class=\"dashboard__label\" for=\"email\"\u003EEmail\u003C\u002Flabel\u003E\u003Cinput class=\"dashboard__input\" type=\"email\" id=\"email\"\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cdiv class=\"dashboard__wrapper\"\u003E\u003Cbutton class=\"dashboard__cancel\" type=\"button\"\u003EОтмена\u003C\u002Fbutton\u003E\u003Cbutton class=\"dashboard__submit\" type=\"submit\"\u003EСохранить\u003C\u002Fbutton\u003E\u003C\u002Fdiv\u003E\u003C\u002Ffieldset\u003E";}.call(this,"title" in locals_for_with?locals_for_with.title:typeof title!=="undefined"?title:undefined));;return pug_html;};
 module.exports = template;
 
 /***/ }),
@@ -5596,7 +5667,7 @@ module.exports = template;
 
 var pug = __webpack_require__(15);
 
-function template(locals) {var pug_html = "", pug_mixins = {}, pug_interp;;var locals_for_with = (locals || {});(function (item) {pug_html = pug_html + "\u003Cli class=\"list__item\"\u003E\u003Ca class=\"list__link\" href\u003E\u003Cspan class=\"list__firstname\"\u003E" + (pug.escape(null == (pug_interp = item.firstname + " ") ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cspan class=\"list__surname\"\u003E" + (pug.escape(null == (pug_interp = item.surname) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003C\u002Fa\u003E\u003C\u002Fli\u003E";}.call(this,"item" in locals_for_with?locals_for_with.item:typeof item!=="undefined"?item:undefined));;return pug_html;};
+function template(locals) {var pug_html = "", pug_mixins = {}, pug_interp;;var locals_for_with = (locals || {});(function (item) {pug_html = pug_html + "\u003Cli class=\"list__item\"\u003E\u003Ca class=\"list__link\" href\u003E\u003Cspan class=\"list__fullname\"\u003E" + (pug.escape(null == (pug_interp = item.fullName) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003C\u002Fa\u003E\u003C\u002Fli\u003E";}.call(this,"item" in locals_for_with?locals_for_with.item:typeof item!=="undefined"?item:undefined));;return pug_html;};
 module.exports = template;
 
 /***/ }),
@@ -5612,14 +5683,14 @@ function template(locals) {var pug_html = "", pug_mixins = {}, pug_interp;;var l
   if ('number' == typeof $$obj.length) {
       for (var pug_index0 = 0, $$l = $$obj.length; pug_index0 < $$l; pug_index0++) {
         var item = $$obj[pug_index0];
-pug_html = pug_html + "\u003Cli class=\"list__item\"\u003E\u003Ca class=\"list__link\" href\u003E\u003Cspan class=\"list__firstname\"\u003E" + (pug.escape(null == (pug_interp = item.firstname + " ") ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cspan class=\"list__surname\"\u003E" + (pug.escape(null == (pug_interp = item.surname) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003C\u002Fa\u003E\u003C\u002Fli\u003E";
+pug_html = pug_html + "\u003Cli class=\"list__item\"\u003E\u003Ca class=\"list__link\" href\u003E\u003Cspan class=\"list__fullname\"\u003E" + (pug.escape(null == (pug_interp = item.fullName) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003C\u002Fa\u003E\u003C\u002Fli\u003E";
       }
   } else {
     var $$l = 0;
     for (var pug_index0 in $$obj) {
       $$l++;
       var item = $$obj[pug_index0];
-pug_html = pug_html + "\u003Cli class=\"list__item\"\u003E\u003Ca class=\"list__link\" href\u003E\u003Cspan class=\"list__firstname\"\u003E" + (pug.escape(null == (pug_interp = item.firstname + " ") ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cspan class=\"list__surname\"\u003E" + (pug.escape(null == (pug_interp = item.surname) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003C\u002Fa\u003E\u003C\u002Fli\u003E";
+pug_html = pug_html + "\u003Cli class=\"list__item\"\u003E\u003Ca class=\"list__link\" href\u003E\u003Cspan class=\"list__fullname\"\u003E" + (pug.escape(null == (pug_interp = item.fullName) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003C\u002Fa\u003E\u003C\u002Fli\u003E";
     }
   }
 }).call(this);
@@ -7685,27 +7756,6 @@ if (
     };
 }
 
-// ES5 15.5.4.20
-// whitespace from: http://es5.github.io/#x15.5.4.20
-var ws = '\x09\x0A\x0B\x0C\x0D\x20\xA0\u1680\u180E\u2000\u2001\u2002\u2003' +
-    '\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\u2028' +
-    '\u2029\uFEFF';
-var zeroWidth = '\u200b';
-var wsRegexChars = '[' + ws + ']';
-var trimBeginRegexp = new RegExp('^' + wsRegexChars + wsRegexChars + '*');
-var trimEndRegexp = new RegExp(wsRegexChars + wsRegexChars + '*$');
-var hasTrimWhitespaceBug = StringPrototype.trim && (ws.trim() || !zeroWidth.trim());
-defineProperties(StringPrototype, {
-    // http://blog.stevenlevithan.com/archives/faster-trim-javascript
-    // http://perfectionkills.com/whitespace-deviations/
-    trim: function trim() {
-        if (this === void 0 || this === null) {
-            throw new TypeError("can't convert " + this + ' to object');
-        }
-        return String(this).replace(trimBeginRegexp, '').replace(trimEndRegexp, '');
-    }
-}, hasTrimWhitespaceBug);
-
 // ECMA-262, 3rd B.2.3
 // Not an ECMAScript standard, although ECMAScript 3rd Edition has a
 // non-normative section suggesting uniform semantics and it should be
@@ -7761,6 +7811,8 @@ if (Driver) {
 	module.exports = function WebSocketBrowserDriver(url) {
 		return new Driver(url);
 	};
+} else {
+	module.exports = undefined;
 }
 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
@@ -7875,7 +7927,7 @@ BufferedSender.prototype.sendSchedule = function() {
       if (err) {
         debug('error', err);
         self.emit('close', err.code || 1006, 'Sending error: ' + err);
-        self._cleanup();
+        self.close();
       } else {
         self.sendScheduleWait();
       }
@@ -7889,8 +7941,8 @@ BufferedSender.prototype._cleanup = function() {
   this.removeAllListeners();
 };
 
-BufferedSender.prototype.stop = function() {
-  debug('stop');
+BufferedSender.prototype.close = function() {
+  debug('close');
   this._cleanup();
   if (this.sendStop) {
     this.sendStop();
@@ -8535,10 +8587,11 @@ WebSocketTransport.prototype.send = function(data) {
 
 WebSocketTransport.prototype.close = function() {
   debug('close');
-  if (this.ws) {
-    this.ws.close();
-  }
+  var ws = this.ws;
   this._cleanup();
+  if (ws) {
+    ws.close();
+  }
 };
 
 WebSocketTransport.prototype._cleanup = function() {
@@ -8683,6 +8736,7 @@ var JSON3 = __webpack_require__(6);
 
 // Some extra characters that Chrome gets wrong, and substitutes with
 // something else on the wire.
+// eslint-disable-next-line no-control-regex
 var extraEscapable = /[\x00-\x1f\ud800-\udfff\ufffe\uffff\u0300-\u0333\u033d-\u0346\u034a-\u034c\u0350-\u0352\u0357-\u0358\u035c-\u0362\u0374\u037e\u0387\u0591-\u05af\u05c4\u0610-\u0617\u0653-\u0654\u0657-\u065b\u065d-\u065e\u06df-\u06e2\u06eb-\u06ec\u0730\u0732-\u0733\u0735-\u0736\u073a\u073d\u073f-\u0741\u0743\u0745\u0747\u07eb-\u07f1\u0951\u0958-\u095f\u09dc-\u09dd\u09df\u0a33\u0a36\u0a59-\u0a5b\u0a5e\u0b5c-\u0b5d\u0e38-\u0e39\u0f43\u0f4d\u0f52\u0f57\u0f5c\u0f69\u0f72-\u0f76\u0f78\u0f80-\u0f83\u0f93\u0f9d\u0fa2\u0fa7\u0fac\u0fb9\u1939-\u193a\u1a17\u1b6b\u1cda-\u1cdb\u1dc0-\u1dcf\u1dfc\u1dfe\u1f71\u1f73\u1f75\u1f77\u1f79\u1f7b\u1f7d\u1fbb\u1fbe\u1fc9\u1fcb\u1fd3\u1fdb\u1fe3\u1feb\u1fee-\u1fef\u1ff9\u1ffb\u1ffd\u2000-\u2001\u20d0-\u20d1\u20d4-\u20d7\u20e7-\u20e9\u2126\u212a-\u212b\u2329-\u232a\u2adc\u302b-\u302c\uaab2-\uaab3\uf900-\ufa0d\ufa10\ufa12\ufa15-\ufa1e\ufa20\ufa22\ufa25-\ufa26\ufa2a-\ufa2d\ufa30-\ufa6d\ufa70-\ufad9\ufb1d\ufb1f\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40-\ufb41\ufb43-\ufb44\ufb46-\ufb4e\ufff0-\uffff]/g
   , extraLookup;
 
@@ -9745,7 +9799,7 @@ function ensureOverlayDivExists(onOverlayDivReady) {
 	document.body.appendChild(overlayIframe);
 }
 
-function showErrorOverlay(message) {
+function showMessageOverlay(message) {
 	ensureOverlayDivExists(function onOverlayDivReady(overlayDiv) {
 		// Make it look similar to our terminal.
 		overlayDiv.innerHTML =
@@ -9775,8 +9829,8 @@ exports.clear = function handleSuccess() {
 }
 
 // Compilation with errors (e.g. syntax error or missing modules).
-exports.showErrors = function handleErrors(errors) {
-	showErrorOverlay(errors[0]);
+exports.showMessage = function handleMessage(messages) {
+	showMessageOverlay(messages[0]);
 }
 
 
@@ -9856,6 +9910,70 @@ module.exports = new EventEmitter();
 
 __webpack_require__(37);
 module.exports = __webpack_require__(36);
+
+
+/***/ }),
+/* 96 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+class Users {
+  constructor() {
+    this.usersArr = [];
+
+    this.getUsers();
+
+    this.updateItem = this.updateItem.bind(this);
+    this.addNewItem = this.addNewItem.bind(this);
+    this.removeItem = this.removeItem.bind(this);
+  }
+
+  getUsers() {
+    let xhr = new XMLHttpRequest();
+    xhr.open("GET", 'http://test-api.javascript.ru/v1/ershov/users', true);
+    xhr.send();
+    xhr.onload = e => {
+      this.usersArr = JSON.parse(xhr.responseText);
+      document.dispatchEvent(new CustomEvent('users-recieved', {
+        bubbles: true,
+        detail: {
+          value: this.usersArr
+        }
+      }));
+    }
+  }
+
+  addNewItem(obj) {
+    let body = JSON.stringify({ fullName: obj.fullName, email: obj.email });
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", 'http://test-api.javascript.ru/v1/ershov/users', true);
+    xhr.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+    xhr.send(body);
+  }
+
+  removeItem(id) {
+    let xhr = new XMLHttpRequest();
+    let string = 'http://test-api.javascript.ru/v1/ershov/users/' + id;
+    xhr.open("DELETE", string, true);
+    xhr.send();
+  }
+
+  updateItem(obj) {
+    let body = JSON.stringify({ fullName: obj.fullName, email: obj.email });
+    console.log(obj);
+    console.log(body);
+    let xhr = new XMLHttpRequest();
+    let string = 'http://test-api.javascript.ru/v1/ershov/users/' + obj._id;
+    xhr.open("PATCH", string, true);
+    xhr.send(body);
+
+    xhr.onload = e => {
+      console.log(JSON.parse(xhr.responseText));
+    }
+  }
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Users;
+
 
 
 /***/ })

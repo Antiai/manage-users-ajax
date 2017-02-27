@@ -71,10 +71,6 @@
 }
 .dashboard__label {
   display: block;
-  width: 100px;
-}
-.dashboard__input {
-  text-transform: capitalize;
 }
 .dashboard__wrapper {
   padding-left: 20px;
